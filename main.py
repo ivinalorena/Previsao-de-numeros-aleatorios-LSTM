@@ -5,9 +5,10 @@ import tensorflow as tf
 from sklearn.preprocessing import MinMaxScaler
 from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout
+from keras.callbacks import EarlyStopping
 import datetime
 from sklearn.metrics import mean_absolute_error, mean_squared_error
-
+import calendar
 df = pd.read_excel('primeirasemanasetembro.xlsx')
 
 # organizar por data
@@ -25,7 +26,7 @@ normalizador = MinMaxScaler(feature_range=(0, 1))
 df_dezena_normalizado = normalizador.fit_transform(df_dezena)
 
 # criar janelas deslizantes
-tamanho_janela = 10  # Últimos 10 resultados para prever o próximo
+tamanho_janela = 10  # Últimos 5 resultados para prever o próximo, antes estava 10
 previsao, valor_real = [], []
 
 for i in range(tamanho_janela, len(df_dezena_normalizado)):
@@ -56,19 +57,27 @@ print(f"Dados de teste: {len(x_teste)}")
 
 # Criar modelo LSTM
 modelo = Sequential()
-modelo.add(LSTM(units=50, return_sequences=True, input_shape=(tamanho_janela, 1)))
-modelo.add(Dropout(0.2))
-modelo.add(LSTM(units=25))
-modelo.add(Dropout(0.2))
+modelo.add(LSTM(units=512, return_sequences=True, input_shape=(tamanho_janela, 1)))
+modelo.add(Dropout(0.3))
+modelo.add(LSTM(units=256))
+modelo.add(Dropout(0.3))
 modelo.add(Dense(units=1))
 
 modelo.compile(optimizer='adam', loss='mse', metrics=['mae'])
+
 modelo.summary()
 modelo.save('jogobicho.keras')
+# callback do keras
+early_stopping = EarlyStopping(
+    monitor='val_loss',    # Monitora loss de validação
+    patience=10,           # Aguarda 10 epochs sem melhoria
+    restore_best_weights=True  # Restaura melhores pesos
+)
+
 # Treinar modelo
 historico = modelo.fit(x_treinamento, y_treinamento, 
-                       batch_size=16, 
-                       epochs=200, 
+                       batch_size=15, 
+                       epochs=300, 
                        verbose=1,
                        validation_data=(x_teste, y_teste))
 
@@ -94,7 +103,7 @@ comparacao = pd.DataFrame({
 print(comparacao)
 
 # Fazer previsões futuras
-n = 5  # Próximos 10 resultados
+n = 1  # Próximos 1 resultados -> já foi 5 -> já foi 10
 janela_atual = df_dezena_normalizado[-tamanho_janela:].reshape(1, tamanho_janela, 1)
 previsoes_futuras = []
 
@@ -107,9 +116,18 @@ for _ in range(n):
 previsoes_futuras = np.array(previsoes_futuras).reshape(-1, 1)
 previsoes_futuras_desnormalizadas = normalizador.inverse_transform(previsoes_futuras)
 
-# Gerar datas futuras
+# Gerar datas futuras (pulando domingos)
 ultima_data = pd.to_datetime(df_datas.iloc[-1, 0])
-datas_futuras = [ultima_data + datetime.timedelta(days=i+1) for i in range(n)]
+datas_futuras = []
+dias_adicionados = 0
+
+while len(datas_futuras) < n:
+    dias_adicionados += 1
+    proxima_data = ultima_data + datetime.timedelta(days=dias_adicionados)
+    # Pula domingo (weekday() == 6)
+    # 0: segunda -> 1: terca -> 2: quarta -> 3: quinta -> 4: sexta -> 5: sabado -> 6: domingo
+    if proxima_data.weekday() != calendar.SUNDAY:
+        datas_futuras.append(proxima_data)
 
 # DataFrame com previsões
 df_previsoes = pd.DataFrame({
