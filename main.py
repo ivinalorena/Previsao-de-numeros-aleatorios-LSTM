@@ -26,11 +26,11 @@ normalizador = MinMaxScaler(feature_range=(0, 1))
 df_dezena_normalizado = normalizador.fit_transform(df_dezena)
 
 # criar janelas deslizantes
-tamanho_janela = 10  # Últimos 5 resultados para prever o próximo, antes estava 10
+tamanho_janela = 5  # Últimos 5 resultados para prever o próximo, antes estava 10
 previsao, valor_real = [], []
 
 for i in range(tamanho_janela, len(df_dezena_normalizado)):
-    seq = df_dezena_normalizado[i - tamanho_janela:i, 0]  # Janela de 10 valores
+    seq = df_dezena_normalizado[i - tamanho_janela:i, 0]  # Janela de 5 valores
     previsao.append(seq)
     valor_real.append(df_dezena_normalizado[i, 0])  # Próximo valor
 
@@ -76,7 +76,7 @@ early_stopping = EarlyStopping(
 
 # Treinar modelo
 historico = modelo.fit(x_treinamento, y_treinamento, 
-                       batch_size=15, 
+                       batch_size=32,
                        epochs=300, 
                        verbose=1,
                        validation_data=(x_teste, y_teste))
@@ -98,12 +98,12 @@ print("\n=== COMPARAÇÃO (Teste) - Primeiros 10 ===")
 comparacao = pd.DataFrame({
     'dezena_real': y_teste_desnormalizado[:10, 0].astype(int),
     'dezena_prevista': previsao_teste_desnormalizada[:10, 0].astype(int),
-    'diferenca': np.abs(y_teste_desnormalizado[:10, 0] - previsao_teste_desnormalizada[:10, 0]).astype(int)
+    'diferenca': np.abs(y_teste_desnormalizado[:10, 0] - previsao_teste_desnormalizada[:10, 0]).astype(int) 
 })
 print(comparacao)
 
 # Fazer previsões futuras
-n = 1  # Próximos 1 resultados -> já foi 5 -> já foi 10
+n = 5  # Próximos 1 resultados -> já foi 5 -> já foi 10
 janela_atual = df_dezena_normalizado[-tamanho_janela:].reshape(1, tamanho_janela, 1)
 previsoes_futuras = []
 
@@ -119,6 +119,7 @@ previsoes_futuras_desnormalizadas = normalizador.inverse_transform(previsoes_fut
 # Gerar datas futuras (pulando domingos)
 ultima_data = pd.to_datetime(df_datas.iloc[-1, 0])
 datas_futuras = []
+
 dias_adicionados = 0
 
 while len(datas_futuras) < n:
