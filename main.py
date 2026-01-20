@@ -76,7 +76,7 @@ early_stopping = EarlyStopping(
 
 # Treinar modelo
 historico = modelo.fit(x_treinamento, y_treinamento, 
-                       batch_size=32,
+                       batch_size=64,
                        epochs=300, 
                        verbose=1,
                        validation_data=(x_teste, y_teste))
@@ -143,3 +143,5 @@ print(df_previsoes)
 print("\n=== TOP 10 DEZENAS MAIS FREQUENTES (Histórico) ===")
 frequencia = df['dezena'].value_counts().head(10)
 print(frequencia) """
+
+#prever horario da noite
