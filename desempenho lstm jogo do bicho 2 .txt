@@ -1,0 +1,22 @@
+# Treinar modelo
+historico = modelo.fit(x_treinamento, y_treinamento, 
+                       batch_size=64, #64
+                       epochs=300, 
+                       verbose=1,
+                       validation_data=(x_teste, y_teste))
+
+->=== AVALIAÇÃO DO MODELO ===
+Erro Médio Absoluto (MAE): 6.32
+Raiz do Erro Quadrático Médio (RMSE): 7.31
+
+
+
+historico = modelo.fit(x_treinamento, y_treinamento, 
+                       batch_size=128, #64
+                       epochs=300, 
+                       verbose=1,
+                       validation_data=(x_teste, y_teste))
+
+->=== AVALIAÇÃO DO MODELO ===
+Erro Médio Absoluto (MAE): 6.29
+Raiz do Erro Quadrático Médio (RMSE): 7.27
